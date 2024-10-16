@@ -13,7 +13,7 @@ awk -F',' '$15 != "True" { print $0 }' sortida.csv > sense_errors.csv
 original_count=$(wc -l < sortida.csv) 
 final_count=$(wc -l < sense_errors.csv)
 
-eliminats=$((original_count - final_count)) 
+eliminats=$((original_count - final_count))
 echo "S'han eliminat $eliminats registres."
 
 
@@ -22,7 +22,9 @@ echo "S'han eliminat $eliminats registres."
 echo "video_id,trending_date,title,channel_title,category_id,publish_time,tags,views,likes,dislikes,comment_count,comments_disabled,ratings_disabled,video_error_or_removed,Ranking_Views" > ranking.csv
 
 # 6. Afegir la columna Ranking_Views en funció de les visualitzacions
-awk -F',' 'BEGIN { OFS="," } {
+awk -F',' 'BEGIN { OFS="," } 
+FNR == 1 { next }  # Salta la primera línea
+{
     if ($8 <= 1000000)
         ranking = "Bo";
     else if ($8 > 1000000 && $8 <= 10000000)
@@ -32,22 +34,29 @@ awk -F',' 'BEGIN { OFS="," } {
     print $0, ranking
 }' sense_errors.csv >> ranking.csv
 
-# Afegir la columna Rlikes i Rdislikes com a percentatges
-echo "video_id,trending_date,title,channel_title,category_id,publish_time,tags,views,likes,dislikes,comment_count,comments_disabled,ratings_disabled,video_error_or_removed,ranking,rlikes,rdislikes" > processat.csv
+input_file="ranking.csv"
+# Archivo de salida
+output_file="p4.csv"
 
-# Llegir cada línia (a partir de la segona) i calcular Rlikes i Rdislikes
-tail -n +2 ranking.csv | while IFS=',' read -r video_id trending_date title channel_title category_id publish_time tags views likes dislikes comment_count comments_disabled ratings_disabled video_error_or_removed ranking
-do
-    # Comprovar que views sigui més gran que 0 per evitar divisions per zero
-    if [ "$views" -gt 0 ]; then
-        # Càlcul de Rlikes i Rdislikes com a percentatge
-        rlikes=$(echo "scale=2; ($likes * 100) / $views" | bc)
-        rdislikes=$(echo "scale=2; ($dislikes * 100) / $views" | bc)
-    else
-        rlikes=0
-        rdislikes=0
-    fi
-
-    # Afegir les noves columnes al fitxer processat
-    echo "$video_id,$trending_date,$title,$channel_title,$category_id,$publish_time,$tags,$views,$likes,$dislikes,$comment_count,$comments_disabled,$ratings_disabled,$video_error_or_removed,$ranking,$rlikes,$rdislikes" >> processat.csv
-done
+# Limpiar el archivo de salida
+echo "video_id,trending_date,title,channel_title,category_id,publish_time,tags,views,likes,dislikes,comment_count,comments_disabled,ratings_disabled,video_error_or_removed,Ranking_Views,Rlikes,Rdislikes" > "$output_file"
+count=0
+# Leer cada línea del archivo de entrada
+while IFS=',' read -r video_id trending_date title channel_title category_id publish_time tags views likes dislikes comment_count; do
+    # Comprobar si views no es cero para evitar división por cero
+	((count++))
+	if [[ $count -eq 1 ]]; then
+        	continue
+    	fi
+    	if [[ "$views" -ne 0 ]]; then
+        # Calcular porcentajes utilizando bc para decimales
+        	Rlikes=$(echo "scale=2; $likes * 100 / $views" | bc)
+        	Rdislikes=$(echo "scale=2; $dislikes * 100 / $views" | bc)
+    	else
+        	Rlikes=0  # No se puede calcular
+        	Rdislikes=0  # No se puede calcular
+	fi
+		echo $count
+    # Imprimir la línea original con los nuevos datos
+    	echo "$video_id,$trending_date,$title,$channel_title,$category_id,$publish_time,$tags,$views,$likes,$dislikes,$comment_count,$Rlikes,$Rdislikes" >> "$output_file"
+done < "$input_file"
