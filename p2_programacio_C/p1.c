@@ -27,6 +27,7 @@ void InitData(){
 	V3[i]=(((i*j)%5)?-1:1)*(100.0*(rand()/(1.0*RAND_MAX)));
 	}
  }
+
 //1
 void PrintVect( float vect[N], int from, int numel ) {
     for (int i = from; i < from + numel && i < N; i++) {
@@ -134,6 +135,34 @@ float NormFrobenius(float M[N][N]) {
     }
     return sqrt(suma);
 }
+
+//11
+int DiagonalDom(float M[N][N]) {
+    for (int i = 0; i < N; i++) {
+        float diagonalElement = fabs(M[i][i]); 
+        float sumOthers = 0.0;
+        for (int j = 0; j < N; j++) {
+            if (i != j) {
+                sumOthers += fabs(M[i][j]);
+            }
+        }
+        if (diagonalElement < sumOthers) {
+            return 0; 
+        }
+    }    
+    return 1;
+}
+
+//12
+void Matriu_x_Vector(float M[N][N], float vect[N], float vectres[N]) {
+    for (int i = 0; i < N; i++) {
+        vectres[i] = 0.0;
+        for (int j = 0; j < N; j++) {
+            vectres[i] += M[i][j] * vect[j];
+        }
+    }
+}
+
 
 
 
